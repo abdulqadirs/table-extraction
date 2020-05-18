@@ -1,6 +1,7 @@
 from image_csv.data import remove_special_chars, decimal_conversion, find_year
 
 from pdf2image import convert_from_path 
+from PIL import Image 
 import pandas as pd
 import os
 import re
@@ -10,6 +11,48 @@ class ImageToCSV:
     """
     def __init__(self):
         pass 
+
+    def crop_image(self, img_path):
+        """
+        If the image has two columns then it crops the image into two images.
+
+        Args:
+            img_path (Path): Path of the image.
+        
+        Returns:
+            Paths of the cropped images or None
+
+        Raises:
+            FileNotFoundError: If the given path doesn't exist. 
+        """
+        if os.path.exists(img_path):
+            img = Image.open(img_path)
+            width, height = img.size
+            if  width >= 1000:
+                left1 = 100
+                upper1 = 20
+                right1 = (width / 2) + 60
+                lower1 = height - 200
+                img1 = img.crop((left1, upper1, right1, lower1))
+
+                left2 = right1
+                upper2 = 20
+                right2 = width
+                lower2 = height - 200
+                img2 = img.crop((left2, upper2, right2, lower2))
+
+                path1 = str(img_path).split('.jpg')[0] + '-' + str(1) + '.jpg'
+                path2 = str(img_path).split('.jpg')[0] + '-' + str(2) + '.jpg'
+
+                img1.save(path1)
+                img2.save(path2)
+
+                return [path1, path2]
+
+            else:
+                return [img_path]
+        else:
+            print('FileNotFound')
     
     def pdf_to_jpg(self, pdf_path, jpg_dir, page_no=None):
         """
@@ -42,13 +85,13 @@ class ImageToCSV:
         else:
             print('FileNotFound')
         
-    def image_to_txt(self, img_path, txt_path):
+    def image_to_txt(self, img_path, txt_dir):
         """
         Converts a given image to txt ffile.
 
         Args:
             img_path (Path): Path of the input image file.
-            txt_path (Path): Path of the output txt file.
+            txt_path (Path): Directory of the output txt file.
 
         Returns:
             Saves the output txt file in the given directory
@@ -58,8 +101,12 @@ class ImageToCSV:
 
         """
         if os.path.exists(img_path):
-            cmd = 'tesseract ' + str(img_path) + ' ' + str(txt_path) + ' --psm 6 --dpi 300'
-            os.system(cmd)
+            paths = self.crop_image(img_path)
+            for path in paths:
+                txt_file_name = str(path).split('/')[-1].split('.')[0]
+                txt_file_path = str(txt_dir) + '/' + txt_file_name
+                cmd = 'tesseract ' + str(path) + ' ' + str(txt_file_path) + ' --psm 6 --dpi 300'
+                os.system(cmd)
         else:
             print('FileNotFound')
 

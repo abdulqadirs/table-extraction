@@ -1,73 +1,145 @@
 import re
 
-def remove_special_chars(word):
-    """
-    Removes all the special characters from the given string.
+class DataCleaner:
+    def __init__(self):
+        pass
 
-    Args:
-        word (str): String.
-    """
-    word = word.replace(',', '')
-    if word.startswith('('):
-        word = word.replace('(', '-', 1)
-    word = word.replace('(', '')
+    def clean_row(self, row):
+        """
+        Delete unnecessary words from the given row.
+
+        Args:
+            row (list): A list of strings.
         
-    if not word.startswith('-') and word.endswith(')'):
-        word = word.replace(')', '')
-        word = '-' + word
-    word = word.replace(')', '')  
-    word = word.replace('\n', '')
-    word = word.replace('|', '')
-    word = word.replace('[', '')
+        Returns:
+            row (list): A list of strings.
+        """
+        if row[-1] == ':\n' or row[-1] == '\n':
+            row = row[0:len(row)-1]
+        return row
 
-    word = word.replace(']', '')
-    word = word.replace('.', '')
-    word = word.replace('!', '')
-    word = word.replace('-Rs', '')
-    return word
+    def clean_heading(self, heading):
+        """
+        Delete special characters from the table row headings.
 
-def decimal_conversion(numbers):
-    """
-    Converts the numbers to decimal.
+        Args:
+            heading (string):
+        
+        Returns:
+            heading (string):
+        """
+        heading = heading.replace('\n', '')
+        heading = heading.replace('\t', ' ')
+        return heading
 
-    Args:
-        numbers (list): List of strings(numbers).
-    """
-    new_numbers = []
-    new_numbers.append(numbers[0])
-    for num in numbers[1:]:
-        if '.' not in num:
-            l = len(num)
-            end_sub = num[-2:l]
-            start_sub = num.replace(end_sub, '')
-            new_num = start_sub + '.' + end_sub
-            new_numbers.append(new_num)
-        elif ',' in num:
-            num = num.replace(',', '.')
-            new_numbers.append(num)
-        elif '.' in num:
-            new_numbers.append(num)
-    return new_numbers
+    def clean_number(self, number):
+        """
+        Removes all the special characters from the given string (number).
+        If the numbers are surrounded by round bracket '()' it replaces them with negivtive sign '-'.
 
-def find_quarter():
-    """
-    """
-    pass 
+        Args:
+            number (str):
+        
+        Returns: 
+            number (string): 
+        """
+        number = number.replace(':\n', '')
+        number = number.replace(' ','')
+        number = number.replace(',', '')        
+        number = number.replace('\n', '')
+        number = number.replace('|', '')
+        number = number.replace('[', '')
+        number = number.replace('.', '')
 
-def find_year(row):
+        number = number.replace(']', '')
+        number = number.replace('!', '')
+        number = number.replace('-Rs', '')
+        #if number.startswith('('):
+        #    number = number.replace('(', '-', 1)
+        number = number.replace('(', '')
+            
+        if not number.startswith('-') and number.endswith(')'):
+            number = number.replace(')', '')
+            number = '-' + number
+        number = number.replace(')', '')
+
+        if number.startswith('(') and number.endswith(')'):
+            number = '-' + number
+            number = number.replace('(', '')
+            number = number.replace(')', '')
+            
+        if number.endswith(')') and not number.startswith('('):
+            number = number.replace(')', '')
+            
+        if not number.endswith(')') and number.startswith('('):
+            number = number.replace('(', '')  
+        return number
+
+
+    def delete_note(self, numbers):
+        """
+        Deleting the note column.
+
+        Args: 
+            numbers (list): List of strings.
+        
+        Returns:
+            numbers (list): List of strings after deleting 'note' column.
+        """
+        index = 0
+        num = numbers[index].strip()
+        if num == '-':
+            return numbers
+        elif float(numbers[index]) < 250 and float(numbers[index]) > 0:
+            del numbers[0]
+        return numbers     
+    
+    def delete_line(self, row):
+        """
+        Delete the desired row.
+        """
+        if row == 'CONTINGENCIES AND COMMITMENTS' or 'CONTINGENCIES AND COMMITMENTS' in row:
+            return True
+        else:
+            return False
+    
+    def isempty_row(self, row):
+        """
+        Detects if a row is empty or not.
+
+        Args:
+            row (list):
+        
+        Returns:
+            bool:
+
+        """
+        if row == [] or row == [''] or row is None:
+            return True
+        else:
+            return False
+
+
+def detect_numbers(row):
     """
-    Finds if years exist in the given string.
+    Returns true if all the strings in a given row are numbers.
 
     Args:
         row (list): List of strings.
+    
+    Returns:
+        row (list): 
     """
-    i = 0
-    max_len = len(row)
-    regex = r'[2][0][0-9]{2}'
-    for word in row:
-        if re.match(regex, word):
-            i = i + 1
-    if i == max_len and i > 1:
+    count = 0
+    for num in row:
+        if num.startswith('-') and num != '-':
+            num = num.replace('-', '')
+        if num is not None:
+            if num.isdigit():
+                count = count + 1
+    if count == 0:
+        return False
+    elif count == len(row):
         return True
     else:
         return False

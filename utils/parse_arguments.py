@@ -8,13 +8,12 @@ def parse_arguments():
         The arguments passed through the terminal.
     """
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-i', '--input_path', help='Path of the input pdf or scanned images.', required=True)
-    parser.add_argument('-o', '--output_path', help='Path of output csv file.', required=True)
-    parser.add_argument('-f', '--finetuned_ocr', help='Directory where fineturned tesseract ocr is stored.', required=True)
-    
-    #pdf or scanned image.
-    mode_parser = parser.add_mutually_exclusive_group(required=True)
-    mode_parser.add_argument('-p', '--pdf', help='Input is pdf.', action='store_true')
-    mode_parser.add_argument('-s', '--scanned-pdf', help='Input is image.', action='store_true')
+    parser.add_argument('-i', '--input_path', help='Path of the input pdf.', required=True)
+    parser.add_argument('-o', '--output_path', help='Directory of the output csv file(s).', required=True)
+    parser.add_argument('-t', '--finetuned_ocr', help='Directory where fineturned tesseract ocr is stored.', required=True)
+    parser.add_argument('-b', '--balancesheet_page_nums', help='List containing balance sheet page number(s).', required=False)
+    parser.add_argument('-p', '--profitloss_page_nums', help='List containing pofit-loss page number(s).', required=False)
+    parser.add_argument('-d', '--double_page', help='Enter True if the pdf has double pages.', required=True)
+    parser.add_argument('-n', '--next_page', help='Enter True if the financial statement extends to the next page.', required=True)
 
     return parser.parse_known_args()

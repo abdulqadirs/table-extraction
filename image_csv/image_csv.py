@@ -1,16 +1,42 @@
-from image_csv.data import remove_special_chars, decimal_conversion, find_year
-
-from pdf2image import convert_from_path 
-from PIL import Image 
-import pandas as pd
+import logging
 import os
 import re
 
-class ImageToCSV:
+from image_csv.data import DataCleaner, detect_numbers
+from image_csv.earnings_per_share import EPS
+from image_csv.split import split_row
+
+from pdf2image import convert_from_path 
+from pathlib import Path
+from PIL import Image 
+import pandas as pd
+
+logger = logging.getLogger("table-extraction")
+
+class PDFToCSV:
     """
+    Takes a pdf and converts the given pages to jpg.
+    The jpg images are then converted to txt.
+    The txt file is finally converted to csv file.
+
+    Args:
+        input_path (Path): The path of the input pdf.
+        output_path (Path): The path of the output directory to store csv file(s).
+        ocr_path (Path): The path of the finetuned ocr directory.
+        page_numbers (list): A list of the page number(s).
     """
-    def __init__(self):
-        pass 
+    def __init__(self, input_path, output_path, ocr_path, page_numbers, double_page, next_page):
+        self.input_path = input_path
+        self.output_dir = output_path
+        self.ocr_path = '/home/abdulqadir/tesseract/data/output'
+        self.page_numbers = page_numbers
+        self.double_page = double_page
+        self.next_page = next_page
+        self.image_files = []
+        self.csv_files = []
+        self.txt_files = []
+        self.data_cleaner = DataCleaner()
+        self.eps = EPS()
 
     def crop_image(self, img_path):
         """
@@ -26,165 +52,171 @@ class ImageToCSV:
             FileNotFoundError: If the given path doesn't exist. 
         """
         if os.path.exists(img_path):
+            logger.info("Divding the double page image into two images.")
             img = Image.open(img_path)
             width, height = img.size
-            if  width >= 1000:
-                left1 = 100
-                upper1 = 20
-                right1 = (width / 2) + 60
-                lower1 = height - 200
-                img1 = img.crop((left1, upper1, right1, lower1))
+            left1 = 20
+            upper1 = 20
+            right1 = (width / 2)
+            lower1 = height - 100
+            img1 = img.crop((left1, upper1, right1, lower1))
 
-                left2 = right1
-                upper2 = 20
-                right2 = width
-                lower2 = height - 200
-                img2 = img.crop((left2, upper2, right2, lower2))
+            left2 = right1
+            upper2 = 20
+            right2 = width
+            lower2 = height - 100
+            img2 = img.crop((left2, upper2, right2, lower2))
 
-                path1 = str(img_path).split('.jpg')[0] + '-' + str(1) + '.jpg'
-                path2 = str(img_path).split('.jpg')[0] + '-' + str(2) + '.jpg'
+            path1 = str(img_path).split('.jpg')[0] + '-' + str(1) + '.jpg'
+            path2 = str(img_path).split('.jpg')[0] + '-' + str(2) + '.jpg'
 
-                img1.save(path1)
-                img2.save(path2)
+            img1.save(path1)
+            img2.save(path2)
 
-                return [path1, path2]
+            return [path1, path2]
 
-            else:
-                return [img_path]
         else:
-            print('FileNotFound')
+            logger.exception("File %s not found.", img_path)
     
-    def pdf_to_jpg(self, pdf_path, jpg_dir, page_no=None):
+    def pdf_to_jpg(self):
         """
-        Converts a specific page from  pdf from to  image(jpg). 
-        If 'page_no' is not then all the pages from pdf files are converted to image(jpg).
+        Converts specific page(s) from  pdf from to  image(jpg). 
+        Saves the output txt file in the given directory
 
         Args:
-            pdf_path (Path): Path  of the pdf file.
-            jpg_path (Path): Path of the output directory.
-            page_no (int): Page number.
         
         Returns:
-            Saves the jpg file(s) in the given directory.
         
         Raises:
             FileNotFoundError: If the given paths don't exist.
         """
-        if os.path.exists(pdf_path):
-            if page_no:
-                jpg_file_name = str(pdf_path).split('/')[-1].split('.')[0] + '.jpg'
-                jpg_file_path = str(jpg_dir) + '/' + jpg_file_name
-                page = convert_from_path(pdf_path, first_page=page_no, last_page=page_no, grayscale=False)
+        if os.path.exists(self.input_path) and os.path.exists(self.output_dir):
+            for page_no in self.page_numbers:
+                jpg_file_name = str(self.input_path).split('/')[-1].split('.')[0]
+                jpg_file_path = str(self.output_dir) + '/' + jpg_file_name + '-' + str(page_no) + '.jpg'
+                page = convert_from_path(self.input_path, first_page=page_no, last_page=page_no, grayscale=False)
                 page[0].save(jpg_file_path, 'JPEG')
-            else:
-                pages = convert_from_path(pdf_path, grayscale=False)
-                for i, page in enumerate(pages, start=1):
-                    jpg_file_name = str(pdf_path).split('/')[-1].split('.')[0] + '-' + str(i) + '.jpg'
-                    jpg_file_path = str(jpg_dir) + '/' + jpg_file_name
-                    page.save(jpg_file_path, 'JPEG')
+                self.image_files.append(jpg_file_path)
         else:
-            print('FileNotFound')
-        
-    def image_to_txt(self, img_path, txt_dir):
+            logger.exception("File not found.")
+
+
+    def image_to_txt(self):
         """
-        Converts a given image to txt ffile.
+        Converts a given image to txt file.
+        Saves the output txt file in the given directory
 
         Args:
-            img_path (Path): Path of the input image file.
-            txt_path (Path): Directory of the output txt file.
 
         Returns:
-            Saves the output txt file in the given directory
 
         Raises:
             FileNotFoundError: If the given paths don't exist.
-
         """
-        if os.path.exists(img_path):
-            paths = self.crop_image(img_path)
-            for path in paths:
-                txt_file_name = str(path).split('/')[-1].split('.')[0]
-                txt_file_path = str(txt_dir) + '/' + txt_file_name
-                cmd = 'tesseract ' + str(path) + ' ' + str(txt_file_path) + ' --psm 6 --dpi 300'
-                os.system(cmd)
+        if os.path.exists(self.output_dir):
+            for image_file in self.image_files:
+                if self.double_page:
+                    paths = self.crop_image(image_file)
+                    for path in paths:
+                        txt_file_name = str(path).split('/')[-1].split('.')[0]
+                        txt_path = str(self.output_dir) + '/' + txt_file_name
+                        cmd = 'tesseract --tessdata-dir ' + self.ocr_path + ' ' + path + ' ' + txt_path + ' --psm 6'
+                        os.system(cmd)
+                        self.txt_files.append(txt_path + '.txt')
+                else:
+                    txt_file_name = str(image_file).split('/')[-1].split('.')[0]
+                    txt_path = str(self.output_dir) + '/' + txt_file_name
+                    cmd = 'tesseract --tessdata-dir ' + self.ocr_path + ' ' + image_file + ' ' + txt_path + ' --psm 6'
+                    os.system(cmd)
+                    self.txt_files.append(txt_path + '.txt')
         else:
             print('FileNotFound')
 
 
-    def txt_to_csv(self, txt_path, csv_path):
+    def txt_to_csv(self):
         """
         Converts a given text file to csv file.
+        Saves the output csv file in the given directory.
 
         Args:
-            txt_path (Path): Path of the input txt file.
-            csv_path (Path): Path of the output csv file.
         
         Returns:
-            Saves the output csv file in the given directory.
         
         Raises:
-            FileNotFoundError: If the given paths don't exist.
         """
-        if os.path.exists(txt_path):
-            file = open(txt_path, 'r')
-            regex = r'^[+-]{0,1}((\d*\.)|\d*)\d+$'
-            note = False
+        for txt_file in self.txt_files:
+            file = open(txt_file, "r")
             earnings = False
-            start = False
             data = []
             max_columns = 0
-            for line in file:
+            earnings_row = None
+            earn_prev = False
+            for line_no, line in enumerate(file):
                 line = line.split(' ')
                 row = []
-                headings = []
-                numbers = []
-                for word in line:
-                    word = remove_special_chars(word)
-                    if 'Note' in word or word == 'Note' or 'Nate' in word:
-                        note = True
-                    if 'annexed' in line:
-                        break
-                    if re.match(regex, word):
-                        if earnings == True:
-                            word = decimal_conversion(word)
-                        numbers.append(word)
-                    else:
-                        headings.append(word)
-                if headings:
+                heading = False
+                left_numbers, headings, right_numbers = split_row(line)
+                if left_numbers != [] and left_numbers != [''] and left_numbers is not None:
+                    #left_numbers = delete_note(left_numbers)
+                    row.extend(left_numbers)
+                    
+                if headings != [] and headings != [''] and headings is not None:
                     headings = ' '.join(headings)
+                    headings = self.data_cleaner.clean_heading(headings)
                     row.append(headings)
+                    heading = True
+                    
+                if right_numbers != [] and right_numbers != [''] and right_numbers is not None and heading == True:
+                    right_numbers = self.data_cleaner.delete_note(right_numbers)
+                    row.extend(right_numbers)
 
-                if numbers:
-                    num = numbers[0].replace('-', '')
-                    num = num.replace('.', '')
-                    if num.isdigit():
-                        note_no = int(num)
-                        if note_no < 100 and note == True:
-                            del numbers[0]
-                        row.extend(numbers)
-                
-                year = find_year(row)
-                if year:
-                    row.insert(0, 'Year')
-                    start = True
-                
                 if row != [] and row != [''] and row is not None:
-                    if 'Earnings per share' in row[0] or 'Earnings' in row[0] or 'per share' in row[0]:
-                        earnings = True
-                        row = decimal_conversion(row)
-                #row = delete_row(row)
-                if (row != [''] or row != []) and start == True:
-                    #print(row)
+                    earnings = self.eps.detect_eps_row(row)
+                    if earnings:
+                        if len(row) == 1:
+                            earnings_row = line_no
+                            earn_prev = True
+                        else:
+                            row = self.eps.decimal_conversion(row)
+
+                    if earn_prev == True and line_no == (earnings_row + 1):
+                        row = self.eps.decimal_conversion(row)
+                        earn_prev = False
+                        
+                if row != [''] and row != [] and row is not None:
                     if len(row) >= max_columns:
                         max_columns = len(row)
-                    data.append(row)
-                if earnings:
-                    break
-            
+                    if row is not None and row != [] and row != ['']:
+                        if not self.data_cleaner.delete_line(row):
+                            data.append(row)
+
             columns = list(range(max_columns))
             for i, row in enumerate(data):
-                if len(row) < max_columns:
+                all_nums = detect_numbers(row)
+                if all_nums:
+                    data[i] = [None] * (max_columns - len(row)) + data[i]
+                else:
                     data[i] = data[i] + [None] * (max_columns - len(row))
-            df = pd.DataFrame(data, columns = columns)    
-            print(df)
-            df.to_csv(csv_path, sep='\t',index=False)
+                 
+            df = pd.DataFrame(data, columns = columns)
+
+            csv_file = txt_file.split('.txt')[0] + '.csv'
+            df.to_csv(csv_file, sep='\t',index=False)
+            self.csv_files.append(csv_file)
+    
+
+    def combine_csv_files(self):
+        """
+        If the financial report extends to the next page then the csv files of the two page are combined.
+
+        """
+        if self.next_page:
+            file1 = self.csv_files[0]
+            file2 = self.csv_files[1]
+            ##todo check if the file ends with .pdf
+            file_name = str(self.input_path).split('/')[-1].split('.')[0]
+            output_file = str(self.output_dir) + '/' + file_name + '.csv'
+            df1 = pd.read_csv(file1, delimiter = '\t')
+            df2 = pd.read_csv(file2, delimiter = '\t')
+            df = df1.append(df2)
+            df.to_csv(output_file, sep='\t',index=False)

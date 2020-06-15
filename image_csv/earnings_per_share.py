@@ -13,11 +13,27 @@ class EPS:
             bool: True if the given row is earnings per share row and vice versa.
         """
         context = ['Earnings per share',
-               'Distributable earnings per ordinary share',
-               'Earnings per ordinary share',
-               'earnings per ordinary share',
-               'Basic and diluted earnings per share',
-               'Basic and diluted (Rupees)']
+                'Earning per share',
+                'earnings per share',
+                'Earnings / (loss) per share',
+                'Earnings / (Loss) per Ordinary share',
+                'Earning / (Loss) per share - basic',
+                'basic and diluted',
+                'Earnings / (loss) per ordinary share — basic and diluted',
+                'Distributable earnings per ordinary share',
+                'Earnings per ordinary share',
+                'earnings per ordinary share',
+                'Basic and diluted earnings per share',
+                'Basic and diluted (Rupees)',
+                'Earnings/ (loss) per share - Basic and diluted (Rs)',
+                'Earings/(loss) per share',
+                'per share - basic and diluted',
+                'Loss per share',
+                'Loss per share - basic / diluted',
+                'Earnings / (Loss) per share - basic',
+                'Earnings (loss) per share - basic',
+                '(Loss) / earnings per share - basic'
+                '(Loss) / Earning per share']
         match = False
         for heading in context:
             if heading in row[0]:

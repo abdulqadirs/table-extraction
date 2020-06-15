@@ -1,16 +1,20 @@
 import logging
 import os
 import re
+import sys
 
 from image_csv.data import DataCleaner, detect_numbers
 from image_csv.earnings_per_share import EPS
 from image_csv.split import split_row
+from PyPDF2 import PdfFileReader
 
 from pdf2image import convert_from_path 
+from pdf2image.exceptions import (PDFInfoNotInstalledError,PDFPageCountError,PDFSyntaxError)
 from pathlib import Path
 from PIL import Image 
 import pandas as pd
 
+#sys.tracebacklimit = 0
 logger = logging.getLogger("table-extraction")
 
 class PDFToCSV:
@@ -91,15 +95,38 @@ class PDFToCSV:
             FileNotFoundError: If the given paths don't exist.
         """
         if os.path.exists(self.input_path) and os.path.exists(self.output_dir):
-            for page_no in self.page_numbers:
-                jpg_file_name = str(self.input_path).split('/')[-1].split('.')[0]
-                jpg_file_path = str(self.output_dir) + '/' + jpg_file_name + '-' + str(page_no) + '.jpg'
-                page = convert_from_path(self.input_path, first_page=page_no, last_page=page_no, grayscale=False)
-                page[0].save(jpg_file_path, 'JPEG')
-                self.image_files.append(jpg_file_path)
+            try:
+                pdf = PdfFileReader(open(self.input_path, 'rb'))
+                total_pages = pdf.getNumPages()
+            except:
+                logger.exception("Invalid pdf file path %s", self.input_path)
+                sys.exit()
+            else:
+                for page_no in self.page_numbers:
+                    if page_no > 0 and page_no <= total_pages:
+                        jpg_file_name = str(self.input_path).split('/')[-1].split('.')[0]
+                        jpg_file_path = str(self.output_dir) + '/' + jpg_file_name + '-' + str(page_no) + '.jpg'
+                        page = convert_from_path(self.input_path, first_page=page_no, last_page=page_no, grayscale=False)
+                        if len(page) != 0:
+                            page[0].save(jpg_file_path, 'JPEG')
+                            self.image_files.append(jpg_file_path)
+                        else:
+                            logger.exception("Can't convert the given page of pdf file to jpg.")
+                            sys.exit()
+                    else:
+                        logger.exception("Enter the correct page number.")
+                        sys.exit()
         else:
-            logger.exception("File not found.")
-
+            if os.path.exists(self.input_path) is False and os.path.exists(self.output_dir) is False:
+                logger.exception("Input file %s and output directory %s not found!", self.input_path, self.output_dir)
+                sys.exit()
+            elif os.path.exists(self.input_path):
+                logger.exception("Ouput directory %s not found!", self.output_dir)
+                sys.exit()
+            elif os.path.exists(self.output_dir):
+                logger.exception("Input file %s not found!", self.input_path)
+                sys.exit()
+            
 
     def image_to_txt(self):
         """
@@ -150,45 +177,72 @@ class PDFToCSV:
             data = []
             max_columns = 0
             earnings_row = None
+            earnings = False
             earn_prev = False
+            columns = 10 * [0]
+            right_cols = []
+            left_cols = [] 
             for line_no, line in enumerate(file):
                 line = line.split(' ')
                 row = []
                 heading = False
+                left = False
+                right = False
                 left_numbers, headings, right_numbers = split_row(line)
-                if left_numbers != [] and left_numbers != [''] and left_numbers is not None:
+                if left_numbers == right_numbers and not self.data_cleaner.isempty_row(left_numbers):
+                    if left_cols is not None and len(left_cols) > 4:
+                        left_numbers = left_numbers[0:len(left_numbers) // 2]
+                        right_numbers = right_numbers[len(right_numbers) // 2 :]
+                    else:
+                        left_numbers = []
+
+                if not self.data_cleaner.isempty_row(left_numbers):
                     #left_numbers = delete_note(left_numbers)
                     row.extend(left_numbers)
+                    left = True
+                    left_cols.append(len(left_numbers))
                     
-                if headings != [] and headings != [''] and headings is not None:
+                if not self.data_cleaner.isempty_row(headings):
                     headings = ' '.join(headings)
                     headings = self.data_cleaner.clean_heading(headings)
                     row.append(headings)
                     heading = True
-                    
-                if right_numbers != [] and right_numbers != [''] and right_numbers is not None and heading == True:
+                else:
+                    headings = ' '
+                    row.append(headings)
+
+                if not self.data_cleaner.isempty_row(right_numbers):
                     right_numbers = self.data_cleaner.delete_note(right_numbers)
                     row.extend(right_numbers)
-
-                if row != [] and row != [''] and row is not None:
-                    earnings = self.eps.detect_eps_row(row)
-                    if earnings:
-                        if len(row) == 1:
-                            earnings_row = line_no
-                            earn_prev = True
-                        else:
-                            row = self.eps.decimal_conversion(row)
-
-                    if earn_prev == True and line_no == (earnings_row + 1):
-                        row = self.eps.decimal_conversion(row)
-                        earn_prev = False
+                    right = True
+                    right_cols.append(len(right_numbers))
+                
+                if left is False and right is False and heading is  True:
+                    if left_cols != [] and len(left_cols) > 3:
+                        index = max(set(left_cols), key=left_cols.count)
+                        if index > 0:
+                            row = [''] * index + row
                         
-                if row != [''] and row != [] and row is not None:
+                if not self.data_cleaner.isempty_row(row) and earnings is False:
+                    earnings = self.eps.detect_eps_row(row)
+                if earnings:
+                    if len(row) == 1:
+                        earnings_row = line_no
+                        earn_prev = True
+                    else:
+                        row = self.eps.decimal_conversion(row)
+
+                if earn_prev == True and line_no == (earnings_row + 1):
+                    row = self.eps.decimal_conversion(row)
+                    earn_prev = False
+                        
+                if not self.data_cleaner.isempty_row(row):
                     if len(row) >= max_columns:
                         max_columns = len(row)
-                    if row is not None and row != [] and row != ['']:
-                        if not self.data_cleaner.delete_line(row):
-                            data.append(row)
+                    if not self.data_cleaner.delete_line(row):
+                        data.append(row)
+                        #print(row)
+                        columns[len(row)] += 1
 
             columns = list(range(max_columns))
             for i, row in enumerate(data):

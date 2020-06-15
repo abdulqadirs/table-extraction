@@ -16,6 +16,9 @@ class DataCleaner:
         """
         if row[-1] == ':\n' or row[-1] == '\n':
             row = row[0:len(row)-1]
+        for i, word in enumerate(row):
+            if word == 'Rs' or 'Rs' in word:
+                del row[i]
         return row
 
     def clean_heading(self, heading):
@@ -54,6 +57,7 @@ class DataCleaner:
         number = number.replace(']', '')
         number = number.replace('!', '')
         number = number.replace('-Rs', '')
+        number = number.replace('Rs', '')
         #if number.startswith('('):
         #    number = number.replace('(', '-', 1)
         number = number.replace('(', '')
@@ -98,7 +102,7 @@ class DataCleaner:
         """
         Delete the desired row.
         """
-        if row == 'CONTINGENCIES AND COMMITMENTS' or 'CONTINGENCIES AND COMMITMENTS' in row:
+        if row == 'CONTINGENCIES AND COMMITMENTS' or 'CONTINGENCIES AND COMMITMENTS' in row or 'Contingencies and commitments' in row:
             return True
         else:
             return False
@@ -114,7 +118,7 @@ class DataCleaner:
             bool:
 
         """
-        if row == [] or row == [''] or row is None:
+        if row == [] or row == [''] or row is None or row == [' ']:
             return True
         else:
             return False

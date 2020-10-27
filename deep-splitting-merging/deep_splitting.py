@@ -47,6 +47,7 @@ def train(net, training_loader, validation_loader, optimizer, epochs, start_epoc
 
 def validation(net, validation_loader):
     net.eval()
+    device = Config.get('device')
     epoch_loss = 0
     correct_count = 0
     count = 0
@@ -77,6 +78,7 @@ def validation(net, validation_loader):
 
 def testing(net, testing_loader):
     net.eval()
+    device = Config.get('device')
     epoch_loss = 0
     correct_count = 0
     count = 0

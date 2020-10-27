@@ -30,7 +30,7 @@ def resize_img(img):
     #img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     img = np.array(img)
     h, w = img.shape
-    min_width = 100
+    min_width = 1500
     scale = 0.5
     new_h = int(scale * h) if int(scale * h) > min_width else min_width
     new_w = int(scale * w) if int(scale * w) > min_width else min_width

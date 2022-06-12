@@ -17,6 +17,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from tqdm import tqdm
 import json
 from pathlib import Path
+import os
 
 def load_labels(path):
     with open(path) as f:
@@ -56,8 +57,7 @@ def resize_labels(row_labels, col_labels, new_h, new_w):
     return row_label, column_label
 
 class TTruthDataset(Dataset):
-    def __init__(self, root_dir, images_dir, json_dir, transform):
-        self.root_dir = root_dir
+    def __init__(self, images_dir, json_dir, transform):
         self.images_dir = images_dir
         self.json_dir = json_dir
         self.transform = transform
@@ -81,31 +81,26 @@ class TTruthDataset(Dataset):
         return img, row_labels, col_labels, index + 1
     
     def __len__(self):
-        return len(self.root_dir)
+        return len(os.listdir(self.images_dir))
 
-def data_loaders(root_path, images_path, json_path):
-    root_dir = root_path
+def data_loaders(images_path, json_path):
     images_dir = images_path
     json_dir = json_path
     
-    root_dir = datasets.ImageFolder(root = root_dir)
-    ttruth_dataset = TTruthDataset(root_dir, images_dir, json_dir, transform = transforms.ToTensor())
+    ttruth_dataset = TTruthDataset(images_dir, json_dir, transform = transforms.ToTensor())
     
     dataset_size = len(ttruth_dataset)
     indices = list(range(dataset_size))
     training_split = int(0.8 * dataset_size)
-    validation_split = int(0.9 * dataset_size)
 
     np.random.seed(96)
     np.random.shuffle(indices)
 
     train_indices = indices[:training_split]
-    valid_indices = indices[training_split:validation_split]
-    test_indices = indices[validation_split:]
+    valid_indices = indices[training_split:]
     
     train_sampler = SubsetRandomSampler(train_indices)
     valid_sampler = SubsetRandomSampler(valid_indices)
-    test_sampler = SubsetRandomSampler(test_indices)
     
     training_loader = DataLoader(ttruth_dataset,
                         num_workers = 0,
@@ -117,9 +112,22 @@ def data_loaders(root_path, images_path, json_path):
                         batch_size = 1,
                         sampler = valid_sampler)
 
-    testing_loader = DataLoader(ttruth_dataset,
-                        num_workers = 0,
-                        batch_size = 1,
-                        sampler= test_sampler)
+    return training_loader, validation_loader
+
+
+def test_data_loader(images_path, json_path):
+    images_dir = images_path
+    json_dir = json_path
     
-    return training_loader, validation_loader, testing_loader
+    ttruth_dataset = TTruthDataset(images_dir, json_dir, transform = transforms.ToTensor())
+    
+    dataset_size = len(ttruth_dataset)
+    test_indices = list(range(dataset_size))
+
+    np.random.seed(96)
+    np.random.shuffle(test_indices)
+    
+    test_sampler = SubsetRandomSampler(test_indices)
+    test_loader = DataLoader(ttruth_dataset, num_workers = 0, batch_size = 1, sampler = test_sampler)
+
+    return test_loader

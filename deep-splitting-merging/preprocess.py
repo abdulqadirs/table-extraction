@@ -11,7 +11,7 @@ import os
 import json
 from pathlib import Path
 from tqdm import tqdm
-from utils.parse_arguments import parse_arguments
+from utils.parse_arguments import parse_preprocessing_arguments
 
 
 def read_xml(path, img):
@@ -245,7 +245,7 @@ def preprocess_data(input_images_dir, xml_dir, processed_images_dir, json_dir):
 
 def main():
     #parsing the arguments
-    args, _ = parse_arguments()
+    args, _ = parse_preprocessing_arguments()
     input_images_dir = Path(args.input_images)
     xml_dir = Path(args.xml_labels)
     processed_images_dir = Path(args.processed_images)

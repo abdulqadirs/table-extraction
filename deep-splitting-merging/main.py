@@ -10,21 +10,26 @@ from data import data_loaders
 from models.split.split import SplitModel
 from deep_splitting import train
 from optimizer import adam_optimizer
-from inference import inference
+# from inference import inference
 from postprocessing.ocr import img_to_hocr
 from postprocessing.table_extraction import extract_csv
+from utils.parse_arguments import parse_training_arguments
+
 
 
 def main():
 
-    #config_file = Path('../config.ini')
-    #reading_config(config_file)
+    args, _ = parse_training_arguments()
+    images_dir = Path(args.images_dir)
+    labels_dir = Path(args.labels_dir)
+    output_dir = Path(args.output_dir)
 
-    # root_dir = '../../dataset/preprocessed-data-0'
-    # images_dir = '../../dataset/preprocessed-data-0/input-jpg'
-    # xml_dir = '../../dataset/preprocessed-data-0/json-labels'
+    if args.checkpoints is not None:
+        checkpoints_file = Path(args.checkpoints)
 
-    # training_loader, validation_loader, testing_loader = data_loaders(root_dir, images_dir, xml_dir)
+    config_file = Path('../config.ini')
+    reading_config(config_file)
+    training_loader, validation_loader = data_loaders(images_dir, labels_dir)
     # split_model = SplitModel(input_channels=1)
     # net = split_model.to(Config.get('device'))
     # learning_rate = Config.get('learning_rate')
@@ -41,12 +46,6 @@ def main():
 
     # train(net, training_loader, validation_loader, optimizer, epochs, start_epoch, validate_every)
 
-    orig_path = Path('../../dataset/preprocessed-data-0/input-jpg/1.jpg')
-    resized_path = Path('../../dataset/test/img.jpg')
-    hocr_path = Path('../../dataset/test/output')
-    seg_path = Path('../../dataset/test/segmented.jpg')
-    df = inference(orig_path, resized_path, hocr_path, seg_path)
-    print(df)
 
 
 

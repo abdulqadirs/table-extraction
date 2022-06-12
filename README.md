@@ -34,5 +34,6 @@ python deep-splitting-merging/inference.py -i <PATH_TO_INPUT_IMAGE> -c <PATH_TO_
 Imput Image                |  Segmented Image
 :-------------------------:|:-------------------------:
 ![input-image](./deep-splitting-merging/output/data/239.jpg)   |  ![segmented-image](./deep-splitting-merging/output/data/239-segmented.jpg)
+![input-image](./deep-splitting-merging/output/data/1086.jpg)   |  ![segmented-image](./deep-splitting-merging/output/data/1086-segmented.jpg)
 
 

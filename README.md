@@ -29,7 +29,7 @@ python deep-splitting-merging/main.py -e -i <PATH_TO_INPUT_IMAGES_DIRECTORY> -l 
 python deep-splitting-merging/inference.py -i <PATH_TO_INPUT_IMAGE> -c <PATH_TO_CHECKPINTS_FILE> -o <PATH_TO_OUTPUT_DIRECTORY>
 ```
 
-## Results
+## Table Segmentation Results
 <!-- <img src="./deep-splitting-merging/output/data/239.jpg" width="500" height="500">  -->
 Imput Image                |  Segmented Image
 :-------------------------:|:-------------------------:

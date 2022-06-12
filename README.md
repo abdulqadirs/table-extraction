@@ -4,7 +4,7 @@
 Install the [T-Truth ](https://github.com/sohaib023/T-Truth "T-Truth ")labelling tool for labelling the rows and columns of tables in document images.
 | ![labelling-1.jpg](./deep-splitting-merging/output/data/labelling-1.png?raw=true) | 
 |:--:| 
-| *Figure-1: Image labelled using T-Truth tool.* |
+| *Image labelled using T-Truth tool.* |
 
 ## Usage
 
@@ -28,3 +28,11 @@ python deep-splitting-merging/main.py -e -i <PATH_TO_INPUT_IMAGES_DIRECTORY> -l 
 ```
 python deep-splitting-merging/inference.py -i <PATH_TO_INPUT_IMAGE> -c <PATH_TO_CHECKPINTS_FILE> -o <PATH_TO_OUTPUT_DIRECTORY>
 ```
+
+## Results
+<!-- <img src="./deep-splitting-merging/output/data/239.jpg" width="500" height="500">  -->
+Imput Image                |  Segmented Image
+:-------------------------:|:-------------------------:
+![input-image](./deep-splitting-merging/output/data/239.jpg)   |  ![segmented-image](./deep-splitting-merging/output/data/239-segmented.jpg)
+
+

@@ -63,16 +63,23 @@ def main():
     transform = transforms.ToTensor()
     img = preprocess_img(img, transform)
     img = img.unsqueeze(1)
-    pred_labels = net(img)
-    c5 = pred_labels[2]
-    # #r = r[-1] > 0.5
-    c5 = c5[-1] > 0.5
-    # #r = r.cpu().detach().numpy()
-    c5 = c5.cpu().detach().numpy()
-    
-    c_im = c5.reshape((1,-1))*np.ones((height, width))
 
-    image = Image.fromarray(c_im*255.).convert('L')
+    pred_labels = net(img)
+    pred_row_labels, pred_col_labels = pred_labels
+    c5 = pred_col_labels[2]
+    r5 = pred_row_labels[2]
+
+    r5 = r5[-1] > 0.5
+    c5 = c5[-1] > 0.5
+    
+    r5 = r5.cpu().detach().numpy()
+    c5 = c5.cpu().detach().numpy()
+
+    r_im = r5.reshape((-1,1))*np.ones((r5.shape[0],c5.shape[0]))
+    c_im = c5.reshape((1,-1))*np.ones((height,width))
+    im = cv2.bitwise_or(r_im,c_im)
+
+    image = Image.fromarray(im*255.).convert('L')
     image.save(segmented_img_path)
     hocr_file = str(hocr_path) + '.hocr'
     df = extract_csv(segmented_img_path, hocr_file)

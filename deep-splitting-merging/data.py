@@ -18,6 +18,8 @@ from tqdm import tqdm
 import json
 from pathlib import Path
 import os
+from config import Config
+from utils.read_config import reading_config
 
 def load_labels(path):
     with open(path) as f:
@@ -31,8 +33,8 @@ def resize_img(img):
     #img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     img = np.array(img)
     h, w = img.shape
-    min_width = 1500
-    scale = 0.5
+    min_width = Config.get('min_width')
+    scale = Config.get('resize_scale')
     new_h = int(scale * h) if int(scale * h) > min_width else min_width
     new_w = int(scale * w) if int(scale * w) > min_width else min_width
     img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
@@ -71,7 +73,10 @@ class TTruthDataset(Dataset):
         row_labels, col_labels = load_labels(json_path)
         width, height = img.size
         
-        if width > 1800 or height > 1800:
+        max_width = Config.get('max_width')
+        max_height = Config.get('max_height')
+
+        if width > max_width or height > max_height:
             img, new_h, new_w = resize_img(img)
             row_labels, col_labels = resize_labels(row_labels, col_labels, new_h, new_w)
         
@@ -86,6 +91,10 @@ class TTruthDataset(Dataset):
         return len(os.listdir(self.images_dir))
 
 def data_loaders(images_path, json_path):
+
+    config_file = Path('../config.ini')
+    reading_config(config_file)
+
     images_dir = images_path
     json_dir = json_path
     
@@ -103,15 +112,18 @@ def data_loaders(images_path, json_path):
     
     train_sampler = SubsetRandomSampler(train_indices)
     valid_sampler = SubsetRandomSampler(valid_indices)
+
+    train_batch_size = Config.get('training_batch_size')
+    valid_batch_size = Config.get('validation_batch_size')
     
     training_loader = DataLoader(ttruth_dataset,
                         num_workers = 0,
-                        batch_size = 1,
+                        batch_size = train_batch_size,
                         sampler = train_sampler)
 
     validation_loader = DataLoader(ttruth_dataset,
                         num_workers = 0,
-                        batch_size = 1,
+                        batch_size = valid_batch_size,
                         sampler = valid_sampler)
 
     return training_loader, validation_loader
@@ -129,7 +141,8 @@ def test_data_loader(images_path, json_path):
     np.random.seed(96)
     np.random.shuffle(test_indices)
     
+    test_batch_size = Config.get('testing_batch_size')
     test_sampler = SubsetRandomSampler(test_indices)
-    test_loader = DataLoader(ttruth_dataset, num_workers = 0, batch_size = 1, sampler = test_sampler)
+    test_loader = DataLoader(ttruth_dataset, num_workers = 0, batch_size = test_batch_size, sampler = test_sampler)
 
     return test_loader

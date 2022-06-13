@@ -41,8 +41,9 @@ def reading_config(file_path):
     #split_model
     Config.set("image_channels", config.getint("split_model", "image_channels", fallback=1))
     Config.set("max_width", config.getint("split_model", "max_width", fallback=1800))
-    Config.set("image_height", config.getint("split_model", "max_height", fallback=1800))
+    Config.set("max_height", config.getint("split_model", "max_height", fallback=1800))
     Config.set("resize_scale", config.getfloat("split_model", "resize_scale", fallback=0.5))
+    Config.set('min_width', config.getint('split_model', 'min_width', fallback=1500))
     Config.set("num_of_modules", config.getint("split_model", "num_of_modules", fallback=5))
 
     #Training

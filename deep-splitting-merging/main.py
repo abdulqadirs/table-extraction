@@ -36,6 +36,9 @@ def main():
         learning_rate = Config.get('learning_rate')
         weight_decay = Config.get('weight_decay')
         optimizer = adam_optimizer(net, learning_rate, weight_decay)
+        epochs = Config.get('epochs')
+        validate_every = Config.get('validate_every')
+
         if args.checkpoints is not None:
             checkpoint_file = Path(args.checkpoints)
             checkpoint = torch.load(checkpoint_file, map_location=Config.get('device'))
@@ -45,8 +48,6 @@ def main():
             train(net, training_loader, validation_loader, optimizer, epochs, start_epoch, validate_every)
         else:
             start_epoch = 1
-            epochs = 2
-            validate_every = 1
             train(net, training_loader, validation_loader, optimizer, epochs, start_epoch, validate_every, output_dir)
     
     elif args.testing:

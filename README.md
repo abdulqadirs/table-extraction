@@ -37,8 +37,7 @@ Imput Image                |  Segmented Image
 ![input-image](./deep-splitting-merging/output/data/1086.jpg)   |  ![segmented-image](./deep-splitting-merging/output/data/1086-segmented.jpg)
 
 ## Citation
-
-If this work is useful for your research or if you use this implementation in your academic projects, please cite the following paper:
+If you find this work useful and use this implementation in your research projects, cite the following paper:
 ```bibtex
 @InProceedings{ICDAR2019,
 author = {Christopher Tensmeyer, Vlad Morariu, Brian Price, Scott Cohen and Tony Martinez},

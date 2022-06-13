@@ -26,7 +26,7 @@ def reading_config(file_path):
     #GPUs
     Config.set("disable_cuda", config.getboolean("GPU", "disable_cuda", fallback=False))
     if not Config.get("disable_cuda") and torch.cuda.is_available():
-        Config.set("device", "cuda")
+        Config.set("device", "cpu")
         logger.info('GPU is available')
     else:
         Config.set("device", "cpu")

@@ -61,10 +61,12 @@ class TTruthDataset(Dataset):
         self.images_dir = images_dir
         self.json_dir = json_dir
         self.transform = transform
+        self.image_files = os.listdir(self.images_dir)
         
     def __getitem__(self, index):
-        img_path = self.images_dir + '/' + str(index + 1) + '.jpg'
-        json_path = self.json_dir + '/' + str(index + 1) + '.json'
+        img_path = Path(self.images_dir / self.image_files[index])
+        json_file = self.image_files[index].split('.')[0] + '.json'
+        json_path = Path(self.json_dir / json_file)
         img = Image.open(img_path)
         row_labels, col_labels = load_labels(json_path)
         width, height = img.size

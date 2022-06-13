@@ -4,13 +4,14 @@ import torch
 from PIL import Image
 from config import Config
 from pathlib import Path
-
+import os
 from utils.read_config import reading_config
 from models.split.split import SplitModel
-#from preprocess import preproces_img
+from preprocess import preprocess_img
 from postprocessing.ocr import img_to_hocr
 from postprocessing.table_extraction import extract_csv
 from utils.parse_arguments import parse_inference_arguments
+import torchvision.transforms as transforms
 
 
 def resize_img(img):
@@ -28,45 +29,54 @@ def resize_img(img):
 def main():
     args, _ = parse_inference_arguments()
     img_path = Path(args.image_path)
-    checkpints_path = Path(args.checkpoints)
+    checkpoints_path = Path(args.checkpoints)
     output_dir = Path(args.output_dir)
 
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    resized_img_name = str(img_path).split('/')[-1].split('.')[0] + '_resized' + '.jpg' 
+    resized_path = Path(output_dir / resized_img_name)
+    hocr_file = str(img_path).split('/')[-1].split('.')[0]
+    hocr_path = Path(output_dir / hocr_file)
+    segmented_img_name = str(img_path).split('/')[-1].split('.')[0] + '_segmented' + '.jpg' 
+    segmented_img_path = Path(output_dir / segmented_img_name)
     
-    # config_file = Path('../config.ini')
-    # reading_config(config_file)
+    config_file = Path('../config.ini')
+    reading_config(config_file)
 
-    # img = Image.open(orig_path)
-    # img = resize_img(img)
-    # cv2.imwrite(str(resized_path), img)
-    # img_to_hocr(str(resized_path), str(hocr_path))
+    img = Image.open(img_path)
+    img = resize_img(img)
+    cv2.imwrite(str(resized_path), img)
+    
+    img_to_hocr(str(resized_path), str(hocr_path))
 
 
-    # split_model = SplitModel(input_channels=1)
-    # net = split_model.to(Config.get('device'))
-    # checkpoint_file = Path('output/trained_model/checkpoint.deep_column_splitting.pth.tar')
-    # checkpoint = torch.load(checkpoint_file, map_location=Config.get('device'))
-    # net.load_state_dict(checkpoint['net'])
-    # net.eval()
-    # height, width = img.shape
+    split_model = SplitModel(input_channels=1)
+    net = split_model.to(Config.get('device'))
+    checkpoint = torch.load(checkpoints_path, map_location=Config.get('device'))
+    net.load_state_dict(checkpoint['net'])
+    net.eval()
+    height, width = img.shape
 
-    # img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-    # #img = preproces_img(img) ##todo
-    # img = img.unsqueeze(1)
-    # pred_labels = net(img)
-    # c5 = pred_labels[2]
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    transform = transforms.ToTensor()
+    img = preprocess_img(img, transform)
+    img = img.unsqueeze(1)
+    pred_labels = net(img)
+    c5 = pred_labels[2]
     # #r = r[-1] > 0.5
-    # c5 = c5[-1] > 0.5
+    c5 = c5[-1] > 0.5
     # #r = r.cpu().detach().numpy()
-    # c5 = c5.cpu().detach().numpy()
+    c5 = c5.cpu().detach().numpy()
     
-    # c_im = c5.reshape((1,-1))*np.ones((height, width))
+    c_im = c5.reshape((1,-1))*np.ones((height, width))
 
-    # image = Image.fromarray(c_im*255.).convert('L')
-    # image.save(seg_path)
-    # hocr_file = str(hocr_path) + '.hocr'
-    # df = extract_csv(seg_path, hocr_file)
-    # print(df)
-    #return df
+    image = Image.fromarray(c_im*255.).convert('L')
+    image.save(segmented_img_path)
+    hocr_file = str(hocr_path) + '.hocr'
+    df = extract_csv(segmented_img_path, hocr_file)
+    print(df)
 
 if __name__ == "__main__":
     main()

@@ -1,10 +1,11 @@
 import torch
 from tqdm import tqdm
-
+import os
 from config import Config
 from loss_function import bce_loss
+from pathlib import Path
 
-def train(net, training_loader, validation_loader, optimizer, epochs, start_epoch,  validate_every):
+def train(net, training_loader, validation_loader, optimizer, epochs, start_epoch,  validate_every, output_dir):
     device = Config.get('device')
     best_accuracy = 0
     for epoch in range(start_epoch, epochs + 1):
@@ -38,11 +39,15 @@ def train(net, training_loader, validation_loader, optimizer, epochs, start_epoc
         print('Epoch {0} finished ! Loss: {1} , Accuracy: {2}'.format(epoch, epoch_loss / (i + 1),accuracy))
         validation_loss, validation_accuracy = validation(net, validation_loader)
         if validation_accuracy > best_accuracy:
-            checkpoint_file = '/gdrive/My Drive/deep-splitting-merging/model/checkpoint.deep_column_splitting.pth.tar'
+            models_dir = Path(output_dir / 'checkpoints')
+            if not os.path.exists(models_dir):
+                os.makedirs(models_dir)
+            checkpoint_file = 'deep_table_splitting--epoch--' + str(epoch) + '.pth.tar'
+            checkpoint_path = Path(models_dir / checkpoint_file)
             torch.save({'epoch': epoch,
                         'net': net.state_dict(),
                         'optimizer': optimizer.state_dict(),
-                        }, str(checkpoint_file))
+                        }, str(checkpoint_path))
 
 
 def validation(net, validation_loader):

@@ -243,6 +243,17 @@ def preprocess_data(input_images_dir, xml_dir, processed_images_dir, json_dir):
         img.save(img_path)
 
 
+def preprocess_img(img, transform):
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    bin_img = binarize_img(img)
+    img = remove_lines(img, bin_img)
+    img = Image.fromarray(img)
+
+    if transform is not None:
+        img = transform(img)
+
+    return img
+
 def main():
     #parsing the arguments
     args, _ = parse_preprocessing_arguments()

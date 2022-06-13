@@ -36,4 +36,15 @@ Imput Image                |  Segmented Image
 ![input-image](./deep-splitting-merging/output/data/239.jpg)   |  ![segmented-image](./deep-splitting-merging/output/data/239-segmented.jpg)
 ![input-image](./deep-splitting-merging/output/data/1086.jpg)   |  ![segmented-image](./deep-splitting-merging/output/data/1086-segmented.jpg)
 
+## Citation
 
+If this work is useful for your research or if you use this implementation in your academic projects, please cite the following paper:
+```bibtex
+@InProceedings{ICDAR2019,
+author = {Christopher Tensmeyer, Vlad Morariu, Brian Price, Scott Cohen and Tony Martinez},
+title = {Deep Splitting and Merging for Table Structure Decomposition},
+booktitle = {The 15th IAPR International Conference on Document Analysis and Recognition (ICDAR)},
+month = {September},
+year = {2019}
+}
+```

@@ -41,6 +41,8 @@ def main():
     hocr_path = Path(output_dir / hocr_file)
     segmented_img_name = str(img_path).split('/')[-1].split('.')[0] + '_segmented' + '.jpg' 
     segmented_img_path = Path(output_dir / segmented_img_name)
+    col_segmented_img = str(img_path).split('/')[-1].split('.')[0] + '_col-segmented' + '.jpg'
+    col_segmented_img_path = Path(output_dir / col_segmented_img)
     
     config_file = Path('../config.ini')
     reading_config(config_file)
@@ -81,8 +83,13 @@ def main():
 
     image = Image.fromarray(im*255.).convert('L')
     image.save(segmented_img_path)
+
+    col_image = Image.fromarray(c_im*255).convert('L')
+    col_image.save(col_segmented_img_path)
+
     hocr_file = str(hocr_path) + '.hocr'
-    df = extract_csv(segmented_img_path, hocr_file)
+    #df = extract_csv(segmented_img_path, hocr_file)
+    df = extract_csv(col_segmented_img_path, hocr_file)
     print(df)
 
 if __name__ == "__main__":

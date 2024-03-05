@@ -24,13 +24,15 @@ def reading_config(file_path):
         logger.exception("Config file doesn't exist.")
 
     #GPUs
-    Config.set("disable_cuda", config.getboolean("GPU", "disable_cuda", fallback=False))
+    Config.set("disable_cuda", config.getboolean("GPU", "disable_cuda", fallback=True))
     if not Config.get("disable_cuda") and torch.cuda.is_available():
-        Config.set("device", "cpu")
+        Config.set("device", "cuda")
         logger.info('GPU is available')
+        print('GPU available')
     else:
         Config.set("device", "cpu")
         logger.info('Only CPU is available')
+        print('Only cpu is available')
 
     #paths
     # Config.set("images_dir", config.get("paths", "images_dir", fallback="Flickr8k_images"))
@@ -42,13 +44,13 @@ def reading_config(file_path):
     Config.set("image_channels", config.getint("split_model", "image_channels", fallback=1))
     Config.set("max_width", config.getint("split_model", "max_width", fallback=1800))
     Config.set("max_height", config.getint("split_model", "max_height", fallback=1800))
-    Config.set("resize_scale", config.getfloat("split_model", "resize_scale", fallback=0.5))
+    Config.set("resize_scale", config.getfloat("split_model", "resize_scale", fallback=0.9))
     Config.set('min_width', config.getint('split_model', 'min_width', fallback=1500))
     Config.set("num_of_modules", config.getint("split_model", "num_of_modules", fallback=5))
 
     #Training
     Config.set("training_batch_size", config.getint("training", "batch_size", fallback=1))
-    Config.set("epochs", config.getint("training", "epochs", fallback=50))
+    Config.set("epochs", config.getint("training", "epochs", fallback=8))
     Config.set("learning_rate", config.getfloat("training", "learning_rate", fallback=0.00075))
     Config.set("weight_decay", config.getfloat("training", "weight_decay", fallback=0.001))
     Config.set("drop_out", config.getfloat("training", "drop_out", fallback=0.4))

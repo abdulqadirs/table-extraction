@@ -69,7 +69,7 @@ class TTruthDataset(Dataset):
         img_path = Path(self.images_dir / self.image_files[index])
         json_file = self.image_files[index].split('.')[0] + '.json'
         json_path = Path(self.json_dir / json_file)
-        img = Image.open(img_path)
+        img = Image.open(img_path).convert('L')
         row_labels, col_labels = load_labels(json_path)
         width, height = img.size
         

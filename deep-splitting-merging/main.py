@@ -14,6 +14,7 @@ from optimizer import adam_optimizer
 from postprocessing.ocr import img_to_hocr
 from postprocessing.table_extraction import extract_csv
 from utils.parse_arguments import parse_training_arguments
+import wandb
 
 
 
@@ -23,6 +24,9 @@ def main():
     images_dir = Path(args.images_dir)
     labels_dir = Path(args.labels_dir)
     output_dir = Path(args.output_dir)
+
+    # Log in to your W&B account
+    wandb.login()
 
     if args.checkpoints is not None:
         checkpoints_file = Path(args.checkpoints)
@@ -39,6 +43,15 @@ def main():
         epochs = Config.get('epochs')
         validate_every = Config.get('validate_every')
 
+        wandb.init(
+            project="table-segmentation", 
+            name="static-images-11col-7row", 
+            config={
+            "learning_rate": learning_rate,
+            "architecture": "splerge",
+            "dataset": "static-seps_real-images",
+            "epochs": epochs})
+
         if args.checkpoints is not None:
             checkpoint_file = Path(args.checkpoints)
             checkpoint = torch.load(checkpoint_file, map_location=Config.get('device'))
@@ -49,6 +62,8 @@ def main():
         else:
             start_epoch = 1
             train(net, training_loader, validation_loader, optimizer, epochs, start_epoch, validate_every, output_dir)
+        
+        wandb.finish()
     
     elif args.testing:
         config_file = Path('../config.ini')

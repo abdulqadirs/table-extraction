@@ -1,5 +1,5 @@
 import pandas as pd
-
+from postprocessing.paddle_bboxes import PaddleBBoxes
 from postprocessing.bboxes import BBoxes
 from postprocessing.midpoints import find_midpoints
 from postprocessing.segmentation import TableSegmentation
@@ -7,13 +7,17 @@ from postprocessing.split_columns import split_merged_columns
 from postprocessing.delete_columns import delete_duplicate_columns, delete_empty_columns
 from postprocessing.merge_columns import merge_split_columns
 
-def extract_csv(segmented_path, hocr_path):
+def extract_csv(segmented_path, resized_path, hocr_path=None):
     
     midpoints = find_midpoints(segmented_path)
     
-    document_bboxes = BBoxes(hocr_path)
-    document_bboxes.parse_hocr()
-    document = document_bboxes.document_bboxes()
+    #document_bboxes = BBoxes(hocr_path)
+    #document_bboxes.parse_hocr()
+    #document = document_bboxes.document_bboxes()
+    
+    paddlebboxes = PaddleBBoxes(resized_path)
+    document = paddlebboxes.document_bboxes()
+    #line_separators = paddlebboxes.line_separators()
 
     table_segmentation = TableSegmentation(document)
     table, table_bboxes, _ =table_segmentation.column_segmentation(midpoints) 

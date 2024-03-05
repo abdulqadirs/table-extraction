@@ -51,7 +51,7 @@ def split_merged_columns(table, table_bboxes, mid_points):
                 #print(distances)
         new_midpoints = None
         for c in centers_count:
-            if centers_count[c] >= int(len(word_col) * 0.20):
+            if centers_count[c] >= int(len(word_col) * 0.80):
                 new_midpoints = centers[c]
         if new_midpoints is not None:
             old_midpoints.extend(new_midpoints)

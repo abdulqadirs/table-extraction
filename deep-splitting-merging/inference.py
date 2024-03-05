@@ -16,9 +16,9 @@ import torchvision.transforms as transforms
 
 def resize_img(img):
     img = np.array(img)
-    h, w = img.shape
+    h, w, _ = img.shape
     min_width = 400
-    scale = 0.35
+    scale = 1
     new_h = int(scale * h) if int(scale * h) > min_width else min_width
     new_w = int(scale * w) if int(scale * w) > min_width else min_width
     img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
@@ -59,12 +59,13 @@ def main():
     checkpoint = torch.load(checkpoints_path, map_location=Config.get('device'))
     net.load_state_dict(checkpoint['net'])
     net.eval()
-    height, width = img.shape
+    height, width, _ = img.shape
 
     img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     transform = transforms.ToTensor()
     img = preprocess_img(img, transform)
     img = img.unsqueeze(1)
+    img = img.to(Config.get('device'))
 
     pred_labels = net(img)
     pred_row_labels, pred_col_labels = pred_labels
@@ -89,7 +90,7 @@ def main():
 
     hocr_file = str(hocr_path) + '.hocr'
     #df = extract_csv(segmented_img_path, hocr_file)
-    df = extract_csv(col_segmented_img_path, hocr_file)
+    df = extract_csv(col_segmented_img_path, str(resized_path), hocr_file)
     print(df)
 
 if __name__ == "__main__":

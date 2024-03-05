@@ -5,6 +5,7 @@ from config import Config
 from loss_function import bce_loss
 from pathlib import Path
 import numpy as np
+import wandb
 
 def train(net, training_loader, validation_loader, optimizer, epochs, start_epoch,  validate_every, output_dir):
     device = Config.get('device')
@@ -12,6 +13,11 @@ def train(net, training_loader, validation_loader, optimizer, epochs, start_epoc
     batch_accuracy = []
     batch_accuracy_row = []
     batch_accuracy_col = []
+
+    artifact = wandb.Artifact(
+    name='table-segmentation-static-images-11-7', 
+    type='model'
+    )   
 
     for epoch in range(start_epoch, epochs + 1):
         net.train()
@@ -25,7 +31,12 @@ def train(net, training_loader, validation_loader, optimizer, epochs, start_epoc
 
             labels = (row_labels, col_labels)
 
-            pred_labels = net(img)
+            #-------*******fix this
+            try:
+                pred_labels = net(img)
+            except:
+                print('Error****')
+                continue
             r, c = pred_labels
             loss = bce_loss(pred_labels, labels)
 
@@ -91,19 +102,25 @@ def train(net, training_loader, validation_loader, optimizer, epochs, start_epoc
         print('Row Accuracy:  ', np.mean(batch_accuracy_row))
         print('Column Accuracy:  ', np.mean(batch_accuracy_col))
 
+        train_metrics = {'train/acc' : np.mean(batch_accuracy), 'train/row_acc' : np.mean(batch_accuracy_row), 'train/col_acc' : np.mean(batch_accuracy_col),
+                         'train/loss' : epoch_loss / (i+1)}
+        wandb.log(train_metrics)
+
         if epoch % validate_every == 0:
             validation_loss, validation_accuracy = validation(net, validation_loader)
-            if validation_accuracy > best_accuracy:
-                best_accuracy = validation_accuracy
-                models_dir = Path(output_dir / 'checkpoints')
-                if not os.path.exists(models_dir):
-                    os.makedirs(models_dir)
-                checkpoint_file = 'deep_table_splitting--epoch--' + str(epoch) + '.pth.tar'
-                checkpoint_path = Path(models_dir / checkpoint_file)
-                torch.save({'epoch': epoch,
-                            'net': net.state_dict(),
-                            'optimizer': optimizer.state_dict(),
-                            }, str(checkpoint_path))
+            #if validation_accuracy > best_accuracy:
+            best_accuracy = validation_accuracy
+        #saving every epoch checkpoint
+        models_dir = Path(output_dir / 'checkpoints')
+        if not os.path.exists(models_dir):
+            os.makedirs(models_dir)
+        checkpoint_file = 'deep_table_splitting--epoch--' + str(epoch) + '.pth.tar'
+        checkpoint_path = Path(models_dir / checkpoint_file)
+        torch.save({'epoch': epoch,
+                    'net': net.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    }, str(checkpoint_path))
+        artifact.add_file(local_path=str(checkpoint_path))
 
 
 def validation(net, validation_loader):
@@ -136,7 +153,12 @@ def validation(net, validation_loader):
 
         labels = (row_labels, col_labels)
 
-        pred_labels = net(img)
+        #-------*******fix this
+        try:
+            pred_labels = net(img)
+        except:
+            print('Validation Error***')
+            continue
         loss = bce_loss(pred_labels, labels)
 
         epoch_loss += loss.item()
@@ -250,6 +272,7 @@ def validation(net, validation_loader):
 
 
     total_loss = epoch_loss / (i + 1)
+
     print('Validation finished ! Loss: {0}'.format(epoch_loss / (i + 1)))
     print('Accuracy:  ', np.mean(batch_accuracy))
     print('Precision: ', np.mean(batch_precision))
@@ -266,6 +289,14 @@ def validation(net, validation_loader):
     print('Column Recall:    ', np.mean(batch_recall_col))
     print('Column F1:        ', np.mean(batch_f1_col))
     accuracy = np.mean(batch_accuracy)
+
+    log_metrics = {'val/acc' : np.mean(batch_accuracy), 'val/row_acc' : np.mean(np.mean(batch_accuracy_row)), 'val/col_acc' : np.mean(batch_accuracy_col),
+                   'val/precision' : np.mean(batch_precision), 'val/row_precision' : np.mean(batch_precision_row), 'val/col_precision' : np.mean(batch_precision_col),
+                   'val/recall' : np.mean(batch_recall), 'val/row_recall' : np.mean(batch_recall_row), 'val/col_recall' : np.mean(batch_recall_col),
+                   'val/f1' : np.mean(batch_f1), 'val/row_f1' : np.mean(batch_f1_row), 'val/col_f1' : np.mean(batch_f1_col),
+                   'val/loss' : epoch_loss / (i+1)}
+    wandb.log(log_metrics)
+
     return total_loss, accuracy
 
 def testing(net, testing_loader):
